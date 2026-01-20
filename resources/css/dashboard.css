@@ -1,0 +1,142 @@
+body {
+    background: #f2f3f5;
+}
+
+.sidebar {
+    height: 100vh;
+    width: 260px;
+    position: fixed;
+    top: 0;
+    left: 0;
+    background: #111827;
+    padding: 25px 20px;
+    color: white;
+    font-family: 'Segoe UI', sans-serif;
+}
+
+.sidebar h4 {
+    font-size: 22px;
+    font-weight: 700;
+    margin-bottom: 30px;
+}
+
+.sidebar a {
+    color: #cbd5e1;
+    display: block;
+    padding: 12px 15px;
+    text-decoration: none;
+    font-size: 17px;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: 0.2s ease;
+    font-weight: 500;
+}
+
+.sidebar a:hover {
+    background: #1e293b;
+    color: #fff;
+    padding-left: 20px;
+}
+
+/* MAIN CONTENT */
+.content {
+    margin-left: 270px;
+    padding: 20px;
+}
+
+.navbar-custom {
+    margin-left: 260px;
+    background: #1f2937 !important;
+}
+
+.navbar-brand {
+    color: white !important;
+    font-size: 20px;
+}
+
+.paket-item {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    transition: 0.2s;
+}
+
+.paket-item:hover {
+    background: #eef2f7;
+    border-color: #cbd5e1;
+}
+
+.icon-box {
+    width: 38px;
+    height: 38px;
+    background: #e2e8f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+}
+
+.icon-box i {
+    font-size: 20px;
+    color: #475569;
+}
+
+.table th, .table td {
+    vertical-align: middle;
+    font-size: 16px;
+}
+
+.table-dark th {
+    background: #1f2937 !important;
+}
+
+h4.fw-bold {
+    font-size: 24px;
+}
+
+.modal-content {
+    background-color: #ffffff !important;
+    border-radius: 8px;
+    padding: 10px;
+}
+
+.modal-header, .modal-body, .modal-footer {
+    background-color: #ffffff !important;
+}
+
+.modal {
+    z-index: 2000 !important;
+}
+
+.modal-backdrop {
+    z-index: 1990 !important;
+}
+
+.table thead th {
+    background: #1f2937 !important;
+    color: #fff;
+    font-size: 15px;
+}
+
+.table tbody tr:hover {
+    background: #f1f5f9;
+    transition: 0.2s;
+}
+
+.text-end {
+    text-align: right;
+}
+
+.btn-warning {
+    background: #f59e0b !important;
+    border: none;
+}
+
+.btn-danger {
+    background: #ef4444 !important;
+    border: none;
+}
+
+.btn-warning:hover,
+.btn-danger:hover {
+    opacity: 0.85;
+}
