@@ -7,6 +7,7 @@ use App\Models\Pelanggan;
 use App\Models\Paket;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Services\WhatsAppService;
 
 class OrderController extends Controller
 {
@@ -72,6 +73,13 @@ class OrderController extends Controller
             'id_pelanggan' => $pelanggan->id_pelanggan,
             'id_paket'     => $request->id_paket,
         ]);
+
+        $hp = preg_replace('/^0/', '62', $pelanggan->telp_pelanggan);
+
+        WhatsAppService::send(
+            $hp,
+            "Pesanan Anda berhasil dibuat. Kode Order: ".$kode_order
+        );
 
         return back()->with('success', "Order berhasil ditambahkan dengan kode: $kode_order");
     }

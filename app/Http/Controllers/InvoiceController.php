@@ -6,6 +6,7 @@ use App\Models\Invoice;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use App\Services\WhatsAppService;
 
 class InvoiceController extends Controller
 {
@@ -42,7 +43,9 @@ class InvoiceController extends Controller
             'harga_orang'  => 'required|numeric|min:0',
         ]);
 
-        $order = Order::with('paket')->where('kode_order', $request->kode_order)->firstOrFail();
+        $order = Order::with(['paket','pelanggan'])
+                    ->where('kode_order', $request->kode_order)
+                    ->firstOrFail();
 
         $hargaPaket = $order->paket->harga_paket;
         $tambah = $request->jml_orang * $request->harga_orang;
@@ -50,7 +53,7 @@ class InvoiceController extends Controller
 
         $sisa = max($subtotal - $request->dibayar, 0);
 
-        Invoice::create([
+        $invoice = Invoice::create([
             'no_invoice'   => $request->no_invoice,
             'kode_order'   => $request->kode_order,
             'id_paket'     => $order->id_paket,
@@ -65,6 +68,21 @@ class InvoiceController extends Controller
             'status_bayar' => $request->status_bayar,
             'tgl_invoice'  => now()
         ]);
+
+        if ($order->pelanggan && $order->pelanggan->telp_pelanggan) {
+
+            $hp = preg_replace('/^0/', '62', $order->pelanggan->telp_pelanggan);
+
+            $pesan = "*Invoice Dibuat*\n\n".
+                     "No Invoice: {$invoice->no_invoice}\n".
+                     "Kode Order: {$order->kode_order}\n".
+                     "Paket: {$order->paket->nama_paket}\n".
+                     "Total: Rp ".number_format($invoice->grand_total,0,',','.')."\n".
+                     "Dibayar: Rp ".number_format($invoice->dibayar,0,',','.')."\n".
+                     "Status: {$invoice->status_bayar}";
+
+            WhatsAppService::send($hp, $pesan);
+        }
 
         return redirect()->route('invoice.index')
             ->with('success', 'Invoice berhasil dibuat!');
@@ -96,7 +114,9 @@ class InvoiceController extends Controller
 
     public function lunasi(Request $request, $no)
     {
-        $invoice = Invoice::where('no_invoice', $no)->firstOrFail();
+        $invoice = Invoice::with('order.pelanggan')
+                        ->where('no_invoice', $no)
+                        ->firstOrFail();
 
         $bayar = $request->bayar;
         $invoice->dibayar += $bayar;
@@ -111,12 +131,25 @@ class InvoiceController extends Controller
 
         $invoice->save();
 
+        if ($invoice->order && $invoice->order->pelanggan) {
+
+            $hp = preg_replace('/^0/', '62', $invoice->order->pelanggan->telp_pelanggan);
+
+            $pesan = "*Pembayaran Lunas*\n\n".
+                     "No Invoice: {$invoice->no_invoice}\n".
+                     "Total: Rp ".number_format($invoice->grand_total,0,',','.')."\n".
+                     "Status: LUNAS\n".
+                     "Terima kasih 🙏";
+
+            WhatsAppService::send($hp, $pesan);
+        }
+
         return back()->with('success', 'Pembayaran telah dilunasi!');
     }
 
     private function generateInvoiceNumber()
     {
-        $date = now()->format('dmy'); // 170126
+        $date = now()->format('dmy');
         $random = strtoupper(Str::random(3));
 
         return "JKWPRBW{$date}{$random}";
@@ -141,5 +174,4 @@ class InvoiceController extends Controller
             'html' => view('invoice.list', compact('data'))->render()
         ]);
     }
-
 }
