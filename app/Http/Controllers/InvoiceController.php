@@ -37,49 +37,62 @@ class InvoiceController extends Controller
             'kode_order'   => 'required',
             'metode'       => 'required',
             'bank'         => 'nullable',
-            'status_bayar' => 'required',
+            'status_bayar' => 'required|in:Lunas,Belum Lunas',
             'dibayar'      => 'required|numeric|min:0',
             'jml_orang'    => 'required|numeric|min:0',
             'harga_orang'  => 'required|numeric|min:0',
         ]);
 
+        // Ambil order + relasi
         $order = Order::with(['paket','pelanggan'])
-                    ->where('kode_order', $request->kode_order)
-                    ->firstOrFail();
+            ->where('kode_order', $request->kode_order)
+            ->firstOrFail();
 
+        // Hitung total
         $hargaPaket = $order->paket->harga_paket;
-        $tambah = $request->jml_orang * $request->harga_orang;
-        $subtotal = $hargaPaket + $tambah;
+        $tambahan   = $request->jml_orang * $request->harga_orang;
+        $total      = $hargaPaket + $tambahan;
 
-        $sisa = max($subtotal - $request->dibayar, 0);
+        // Tentukan status bayar SECARA LOGIS (jangan percaya input user)
+        $statusBayar = $request->dibayar >= $total
+            ? 'Lunas'
+            : 'Belum Lunas';
 
+        // Simpan invoice
         $invoice = Invoice::create([
             'no_invoice'   => $request->no_invoice,
-            'kode_order'   => $request->kode_order,
+            'kode_order'   => $order->kode_order,
             'id_paket'     => $order->id_paket,
             'jml_orang'    => $request->jml_orang,
             'harga_orang'  => $request->harga_orang,
-            'subtotal'     => $subtotal,
-            'grand_total'  => $subtotal,
+            'subtotal'     => $total,
+            'grand_total'  => $total,
             'dibayar'      => $request->dibayar,
-            'kembalian'    => 0,
+            'kembalian'    => max(0, $request->dibayar - $total),
             'metode'       => $request->metode,
             'bank_tujuan'  => $request->bank,
-            'status_bayar' => $request->status_bayar,
+            'status_bayar' => $statusBayar,
             'tgl_invoice'  => now()
         ]);
 
+        // 🔥 INI KUNCI UTAMA (YANG SEBELUMNYA HILANG)
+        if ($statusBayar === 'Lunas') {
+            $order->status_order = 'selesai';
+            $order->save();
+        }
+
+        // Kirim WA jika ada nomor
         if ($order->pelanggan && $order->pelanggan->telp_pelanggan) {
 
             $hp = preg_replace('/^0/', '62', $order->pelanggan->telp_pelanggan);
 
             $pesan = "*Invoice Dibuat*\n\n".
-                     "No Invoice: {$invoice->no_invoice}\n".
-                     "Kode Order: {$order->kode_order}\n".
-                     "Paket: {$order->paket->nama_paket}\n".
-                     "Total: Rp ".number_format($invoice->grand_total,0,',','.')."\n".
-                     "Dibayar: Rp ".number_format($invoice->dibayar,0,',','.')."\n".
-                     "Status: {$invoice->status_bayar}";
+                    "No Invoice: {$invoice->no_invoice}\n".
+                    "Kode Order: {$order->kode_order}\n".
+                    "Paket: {$order->paket->nama_paket}\n".
+                    "Total: Rp ".number_format($invoice->grand_total,0,',','.')."\n".
+                    "Dibayar: Rp ".number_format($invoice->dibayar,0,',','.')."\n".
+                    "Status: {$invoice->status_bayar}";
 
             WhatsAppService::send($hp, $pesan);
         }
