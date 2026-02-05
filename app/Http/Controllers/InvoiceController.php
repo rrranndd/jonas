@@ -37,7 +37,7 @@ class InvoiceController extends Controller
             'kode_order'   => 'required',
             'metode'       => 'required',
             'bank'         => 'nullable',
-            'status_bayar' => 'required|in:Lunas,Belum Lunas',
+            'status_bayar' => 'required|in:DP,Lunas',
             'dibayar'      => 'required|numeric|min:0',
             'jml_orang'    => 'required|numeric|min:0',
             'harga_orang'  => 'required|numeric|min:0',
@@ -53,10 +53,12 @@ class InvoiceController extends Controller
         $tambahan   = $request->jml_orang * $request->harga_orang;
         $total      = $hargaPaket + $tambahan;
 
-        // Tentukan status bayar SECARA LOGIS (jangan percaya input user)
-        $statusBayar = $request->dibayar >= $total
-            ? 'Lunas'
-            : 'Belum Lunas';
+        // 🔥 Tentukan status bayar (gabungan input + logika)
+        if ($request->dibayar >= $total) {
+            $statusBayar = 'Lunas';
+        } else {
+            $statusBayar = 'DP';
+        }
 
         // Simpan invoice
         $invoice = Invoice::create([
@@ -75,13 +77,16 @@ class InvoiceController extends Controller
             'tgl_invoice'  => now()
         ]);
 
-        // 🔥 INI KUNCI UTAMA (YANG SEBELUMNYA HILANG)
+        // 🔥 Sinkronkan status order
         if ($statusBayar === 'Lunas') {
             $order->status_order = 'selesai';
-            $order->save();
+        } else {
+            $order->status_order = 'pending';
         }
 
-        // Kirim WA jika ada nomor
+        $order->save();
+
+        // Kirim WhatsApp jika ada nomor
         if ($order->pelanggan && $order->pelanggan->telp_pelanggan) {
 
             $hp = preg_replace('/^0/', '62', $order->pelanggan->telp_pelanggan);
@@ -187,4 +192,22 @@ class InvoiceController extends Controller
             'html' => view('invoice.list', compact('data'))->render()
         ]);
     }
+
+    public function destroy($no)
+    {
+        $invoice = Invoice::where('no_invoice', $no)->firstOrFail();
+
+        $order = $invoice->order;
+
+        if ($order) {
+            $order->status_order = 'pending';
+            $order->save();
+        }
+
+        $invoice->delete();
+
+        return redirect()->route('invoice.index')
+            ->with('success', 'Invoice berhasil dihapus!');
+    }
+
 }

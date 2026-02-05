@@ -68,6 +68,8 @@ Route::middleware(['adminauth'])->group(function () {
 
     Route::get('/invoice', [InvoiceController::class, 'index'])->name('invoice.index');
     Route::get('/invoice/create', [InvoiceController::class, 'create'])->name('invoice.create');
+    Route::get('/invoice/delete/{no}', [InvoiceController::class, 'destroy'])
+    ->name('invoice.delete');
     Route::get('/invoice/order-detail/{kode}', [InvoiceController::class, 'orderDetail']);
     Route::post('/invoice/store', [InvoiceController::class, 'store'])->name('invoice.store');
     Route::get('/invoice/show/{no}', [InvoiceController::class, 'show'])->name('invoice.show');

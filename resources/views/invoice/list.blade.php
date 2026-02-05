@@ -16,8 +16,13 @@
 
     <td>
         <a href="{{ route('invoice.show', $d->no_invoice) }}"
-           class="btn btn-sm btn-dark">
-           Lihat
+            class="btn btn-dark btn-sm">Lihat
+        </a>
+
+        <a href="{{ route('invoice.delete', $d->no_invoice) }}"
+            class="btn btn-danger btn-sm"
+            onclick="return confirm('Yakin ingin menghapus invoice ini?')">
+            Hapus
         </a>
 
         @if($d->status_bayar != 'Lunas')
