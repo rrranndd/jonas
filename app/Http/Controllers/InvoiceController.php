@@ -43,24 +43,20 @@ class InvoiceController extends Controller
             'harga_orang'  => 'required|numeric|min:0',
         ]);
 
-        // Ambil order + relasi
         $order = Order::with(['paket','pelanggan'])
             ->where('kode_order', $request->kode_order)
             ->firstOrFail();
 
-        // Hitung total
         $hargaPaket = $order->paket->harga_paket;
         $tambahan   = $request->jml_orang * $request->harga_orang;
         $total      = $hargaPaket + $tambahan;
 
-        // 🔥 Tentukan status bayar (gabungan input + logika)
         if ($request->dibayar >= $total) {
             $statusBayar = 'Lunas';
         } else {
             $statusBayar = 'DP';
         }
 
-        // Simpan invoice
         $invoice = Invoice::create([
             'no_invoice'   => $request->no_invoice,
             'kode_order'   => $order->kode_order,
@@ -77,7 +73,6 @@ class InvoiceController extends Controller
             'tgl_invoice'  => now()
         ]);
 
-        // 🔥 Sinkronkan status order
         if ($statusBayar === 'Lunas') {
             $order->status_order = 'selesai';
         } else {
@@ -86,7 +81,6 @@ class InvoiceController extends Controller
 
         $order->save();
 
-        // Kirim WhatsApp jika ada nomor
         if ($order->pelanggan && $order->pelanggan->telp_pelanggan) {
 
             $hp = preg_replace('/^0/', '62', $order->pelanggan->telp_pelanggan);
